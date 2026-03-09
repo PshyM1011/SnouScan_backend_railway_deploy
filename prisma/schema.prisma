@@ -182,7 +182,6 @@ model users {
   lost_dog_reports                                lost_dog_reports[]
   match_review_match_review_requested_userTousers match_review[]           @relation("match_review_requested_userTousers")
   match_review_match_review_review_byTousers      match_review[]           @relation("match_review_review_byTousers")
-  biometric_identify_log                          biometric_identify_log[]
   user_role                                       user_role?       @relation(fields: [role_id], references: [id], onUpdate: NoAction)
 }
 
@@ -285,36 +284,4 @@ model lost_dog_reports {
   @@index([dog_id], map: "idx_lost_reports_dog_id")
   @@index([owner_id], map: "idx_lost_reports_owner_id")
   @@index([last_seen_at], map: "idx_lost_reports_last_seen_at")
-}
-
-model biometric_identify_log {
-  id                      Int             @id @default(autoincrement())
-  requested_by            Int?
-  probe_image_url         String
-  quality_gate_accepted   Boolean?
-  quality_gate_feedback   String?
-  quality_gate_confidence Float?          @db.Real
-  matched                 Boolean?
-  matched_dog_id          Int?
-  matched_embedding_id    Int?
-  similarity              Float?          @db.Real
-  distance                Float?          @db.Real
-  threshold               Float?          @db.Real
-  status                  String
-  error_message           String?
-  created_at              DateTime?       @default(now()) @db.Timestamptz(6)
-  dog_profile             dog_profile?    @relation(fields: [matched_dog_id], references: [id], onUpdate: NoAction)
-  dog_embeddings          dog_embeddings? @relation(fields: [matched_embedding_id], references: [id], onUpdate: NoAction)
-  users                   users?          @relation(fields: [requested_by], references: [id], onUpdate: NoAction)
-}
-
-model dog_embedding_images {
-  id             Int            @id @default(autoincrement())
-  embedding_id   Int
-  image_id       Int
-  created_at     DateTime?      @default(now()) @db.Timestamptz(6)
-  dog_embeddings dog_embeddings @relation(fields: [embedding_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  dog_images     dog_images     @relation(fields: [image_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([embedding_id, image_id])
 }
