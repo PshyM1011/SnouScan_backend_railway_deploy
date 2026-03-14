@@ -56,7 +56,7 @@ export const lostReportController = {
     }
   },
 
-  /** Get one lost report by reportId (not restricted to owner). */
+  /** Get one lost report by reportId (not restricted to owner). Response includes owner details (users table) as `users`. */
   getById: async (req: Request, res: Response) => {
     try {
       if (!req.authUserId) {

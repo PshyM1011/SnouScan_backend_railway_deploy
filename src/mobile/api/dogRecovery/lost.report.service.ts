@@ -100,6 +100,7 @@ export const lostReportService = {
 
   /**
    * Get one lost report by reportId (no owner check — any user can view).
+   * Includes owner details from users table (owner_id).
    */
   getByIdPublic: async (reportId: number) => {
     const report = await prisma.lost_dog_reports.findFirst({
@@ -112,6 +113,19 @@ export const lostReportService = {
             dog_front_side_photos: true,
             breed_id: true,
             dog_breed: { select: { name: true } },
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            phone: true,
+            avatar_url: true,
+            username: true,
+            city: true,
+            state: true,
+            country: true,
           },
         },
       },
