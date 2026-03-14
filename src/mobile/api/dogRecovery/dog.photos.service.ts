@@ -166,4 +166,21 @@ export const dogPhotosService = {
     });
     return photos;
   },
+
+  /**
+   * Get all front/side photos for a dog by id (no owner check — public).
+   * Returns photos only if the dog exists and is not deleted.
+   */
+  getByDogIdPublic: async (dogId: number) => {
+    const dog = await prisma.dog_profile.findFirst({
+      where: { id: dogId, is_deleted: { not: true } },
+    });
+    if (!dog) return null;
+
+    const photos = await prisma.dog_front_side_photos.findMany({
+      where: { dog_id: dogId },
+      orderBy: { img_view_type: "asc" },
+    });
+    return photos;
+  },
 };

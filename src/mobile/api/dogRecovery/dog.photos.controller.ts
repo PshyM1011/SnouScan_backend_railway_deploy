@@ -72,4 +72,23 @@ export const dogPhotosController = {
       });
     }
   },
+
+  /** Get all images for a dog by id (no auth, no owner check — public). */
+  getPhotosPublic: async (req: Request, res: Response) => {
+    try {
+      const dogId = Number(req.params.dogId);
+      if (!Number.isInteger(dogId)) {
+        return res.status(400).json({ message: "Invalid dog id" });
+      }
+      const photos = await dogPhotosService.getByDogIdPublic(dogId);
+      if (photos === null) {
+        return res.status(404).json({ message: "Dog not found" });
+      }
+      return res.status(200).json({ photos });
+    } catch (error) {
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to fetch photos",
+      });
+    }
+  },
 };

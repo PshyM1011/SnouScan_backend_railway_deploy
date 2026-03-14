@@ -21,6 +21,7 @@ export const dogPhotosRouter = Router();
 // Mounted at /dogs in mobile API index: /api/mobile/dogs/:dogId/images and /api/mobile/dogs/:dogId/photos
 export const dogPhotosImagesRouter = Router();
 dogPhotosImagesRouter.patch("/:dogId/images", requireAuth, dogPhotosController.updateImages);
+dogPhotosImagesRouter.get("/:dogId/photos/public", dogPhotosController.getPhotosPublic);
 dogPhotosImagesRouter.get("/:dogId/photos", requireAuth, dogPhotosController.getPhotos);
 
 // Per dog: min 2 images (1 frontal + 1 lateral), max 8 total (both types combined)
