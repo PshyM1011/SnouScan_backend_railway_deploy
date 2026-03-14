@@ -63,11 +63,47 @@ export const lostReportService = {
   },
 
   /**
+   * Get all lost reports (no owner filter — for listing/browse).
+   */
+  getAllReports: async () => {
+    const reports = await prisma.lost_dog_reports.findMany({
+      orderBy: { created_at: "desc" },
+      include: {
+        dog_profile: {
+          select: { id: true, name: true, dog_front_side_photos: { take: 2 } },
+        },
+      },
+    });
+    return reports;
+  },
+
+  /**
    * Get one lost report by id. Only the owner can access.
    */
   getById: async (userId: number, reportId: number) => {
     const report = await prisma.lost_dog_reports.findFirst({
       where: { report_id: reportId, owner_id: userId },
+      include: {
+        dog_profile: {
+          select: {
+            id: true,
+            name: true,
+            dog_front_side_photos: true,
+            breed_id: true,
+            dog_breed: { select: { name: true } },
+          },
+        },
+      },
+    });
+    return report;
+  },
+
+  /**
+   * Get one lost report by reportId (no owner check — any user can view).
+   */
+  getByIdPublic: async (reportId: number) => {
+    const report = await prisma.lost_dog_reports.findFirst({
+      where: { report_id: reportId },
       include: {
         dog_profile: {
           select: {

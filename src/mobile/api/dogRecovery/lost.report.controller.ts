@@ -41,6 +41,22 @@ export const lostReportController = {
     }
   },
 
+  /** Get all lost reports (no owner filter). */
+  getAllReports: async (req: Request, res: Response) => {
+    try {
+      if (!req.authUserId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const reports = await lostReportService.getAllReports();
+      return res.status(200).json({ reports });
+    } catch (error) {
+      return res.status(400).json({
+        message: error instanceof Error ? error.message : "Failed to fetch reports",
+      });
+    }
+  },
+
+  /** Get one lost report by reportId (not restricted to owner). */
   getById: async (req: Request, res: Response) => {
     try {
       if (!req.authUserId) {
@@ -50,7 +66,7 @@ export const lostReportController = {
       if (!Number.isInteger(reportId)) {
         return res.status(400).json({ message: "Invalid report id" });
       }
-      const report = await lostReportService.getById(req.authUserId, reportId);
+      const report = await lostReportService.getByIdPublic(reportId);
       if (!report) {
         return res.status(404).json({ message: "Report not found" });
       }

@@ -7,5 +7,6 @@ export const lostReportRouter = Router();
 lostReportRouter.post("/", requireAuth, lostReportController.create);
 lostReportRouter.get("/", requireAuth, lostReportController.getMyReports);
 lostReportRouter.get("/:reportId", requireAuth, lostReportController.getById);
+lostReportRouter.get("/all", requireAuth, lostReportController.getAllReports);
 lostReportRouter.patch("/:reportId", requireAuth, lostReportController.update);
 lostReportRouter.delete("/:reportId", requireAuth, lostReportController.delete);
