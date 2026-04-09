@@ -12,6 +12,8 @@ export type MatchResult = {
     dog_id: string;
     similarity: number;
     percentage: number;
+    /** 0..1 from FastAPI (post re-rank / calibrated score). */
+    confidence: number;
   }>;
   message?: string;
 };
@@ -27,7 +29,7 @@ export async function proxyMatchToFastApi(
     frontalFilename?: string;
     lateralFilename?: string;
     topK?: number;
-  } = {}
+  } = {},
 ): Promise<MatchResult> {
   const { frontalFilename = "frontal.jpg", lateralFilename = "lateral.jpg", topK = 5 } = options;
 
@@ -38,7 +40,7 @@ export async function proxyMatchToFastApi(
 
   if (!FASTAPI_BASE) {
     throw new Error(
-      "DOG_RECOVERY_FASTAPI_URL is not set. Set it to your FastAPI base URL for match."
+      "DOG_RECOVERY_FASTAPI_URL is not set. Set it to your FastAPI base URL for match.",
     );
   }
   const response = await axios.post<MatchResult>(`${FASTAPI_BASE.replace(/\/$/, "")}/match`, form, {
