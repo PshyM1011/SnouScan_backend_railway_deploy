@@ -184,6 +184,7 @@ export const lostReportService = {
     await prisma.lost_dog_reports.delete({
       where: { report_id: reportId },
     });
+    triggerGalleryRebuild().catch(() => {});
     return { deleted: true };
   },
 };
