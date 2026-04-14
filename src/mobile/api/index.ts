@@ -9,6 +9,7 @@ import {
 } from "./dogRecovery/dog.photos.route";
 import { foundDogMatchRouter } from "./dogRecovery/found.dog.match.route";
 import { lostReportRouter } from "./dogRecovery/lost.report.route";
+import { geoNotifyRouter } from "./geoNotify/geoNotify.route";
 
 import { uploadRouter } from "./uploads/upload.route";
 
@@ -26,5 +27,6 @@ mobileApiRouter.use("/dog-recovery", dogPhotosRouter);
 mobileApiRouter.use("/dog-recovery/lost-reports", lostReportRouter);
 // Shorter path for lost reports (e.g. POST /api/mobile/lost-report)
 mobileApiRouter.use("/lost-report", lostReportRouter);
+mobileApiRouter.use("/geo-notify", geoNotifyRouter);
 
 mobileApiRouter.use("/uploads", uploadRouter);
