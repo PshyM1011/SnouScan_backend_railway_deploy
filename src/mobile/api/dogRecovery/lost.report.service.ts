@@ -1,4 +1,5 @@
 import { prisma } from "../../../lib/prisma";
+import { processAdaptiveLostDogGeoNotifications } from "../geoNotify/lostDogGeoNotify.service";
 import { triggerGalleryRebuild } from "./fastapi.rebuild.service";
 
 export type CreateLostReportInput = {
@@ -43,6 +44,7 @@ export const lostReportService = {
       },
     });
     triggerGalleryRebuild().catch(() => {});
+    processAdaptiveLostDogGeoNotifications().catch(() => {});
     return report;
   },
 
