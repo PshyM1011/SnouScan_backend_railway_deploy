@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model attachments {
   id          Int          @id @default(autoincrement())
   dog_id      Int?
@@ -21,7 +20,50 @@ model attachments {
   users       users?       @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model biometric_identify_log {
+  id                      Int             @id @default(autoincrement())
+  requested_by            Int?
+  probe_image_url         String
+  quality_gate_accepted   Boolean?
+  quality_gate_feedback   String?
+  quality_gate_confidence Float?          @db.Real
+  matched                 Boolean?
+  matched_dog_id          Int?
+  matched_embedding_id    Int?
+  similarity              Float?          @db.Real
+  distance                Float?          @db.Real
+  threshold               Float?          @db.Real
+  status                  String
+  error_message           String?
+  created_at              DateTime?       @default(now()) @db.Timestamptz(6)
+  dog_profile             dog_profile?    @relation(fields: [matched_dog_id], references: [id], onUpdate: NoAction)
+  dog_embeddings          dog_embeddings? @relation(fields: [matched_embedding_id], references: [id], onUpdate: NoAction)
+  users                   users?          @relation(fields: [requested_by], references: [id], onUpdate: NoAction)
+}
+
+model cruelty_report {
+  id                   BigInt                 @id @default(autoincrement())
+  description          String
+  incident_date        DateTime               @db.Timestamptz(6)
+  location_lat         Float
+  location_lng         Float
+  address              String
+  contact_info         String
+  is_anonymous         Boolean                @default(false)
+  has_nose_scan        Boolean                @default(false)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  cruelty_report_image cruelty_report_image[]
+}
+
+model cruelty_report_image {
+  id                BigInt         @id @default(autoincrement())
+  cruelty_report_id BigInt
+  image_url         String
+  created_at        DateTime?      @default(now()) @db.Timestamptz(6)
+  cruelty_report    cruelty_report @relation(fields: [cruelty_report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
 model dog_breed {
   id                 Int           @id @default(autoincrement())
   name               String        @unique
@@ -31,93 +73,93 @@ model dog_breed {
   dog_profile        dog_profile[]
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model dog_embeddings {
-  id                   Int                    @id @default(autoincrement())
-  dog_id               Int
-  image_id             Int?
-  embedding            Unsupported("vector")?
-  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
-  dog_embedding_images dog_embedding_images[]
-  biometric_identify_log biometric_identify_log[]
-  dog_profile          dog_profile            @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  dog_images           dog_images?            @relation(fields: [image_id], references: [id], onUpdate: NoAction)
-
-  @@index([embedding])
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model dog_images {
-  id             Int              @id @default(autoincrement())
-  dog_id         Int
-  uploaded_by    Int?
-  image_url      String
-  thumbnail_url  String?
-  is_primary     Boolean?         @default(false)
-  angle          String?
-  capture_date   DateTime?        @db.Date
-  is_processed   Boolean?         @default(false)
-  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
-  is_default     Boolean?
-  image_type_id  Int?
-  dog_embedding_images dog_embedding_images[]
-  dog_embeddings      dog_embeddings[]
-  dog_profile    dog_profile      @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  image_type     image_type?      @relation(fields: [image_type_id], references: [id], onUpdate: NoAction)
-  users          users?           @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
-}
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model dog_embedding_images {
-  id           Int            @id @default(autoincrement())
-  embedding_id Int
-  image_id     Int
-  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
+  id             Int            @id @default(autoincrement())
+  embedding_id   Int
+  image_id       Int
+  created_at     DateTime?      @default(now()) @db.Timestamptz(6)
   dog_embeddings dog_embeddings @relation(fields: [embedding_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   dog_images     dog_images     @relation(fields: [image_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([embedding_id, image_id])
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model image_type {
-  id         Int          @id @default(autoincrement())
-  identifier String       @unique
-  name       String
-  created_at DateTime?    @default(now()) @db.Timestamptz(6)
-  dog_images dog_images[]
+model dog_embeddings {
+  id                     Int                      @id @default(autoincrement())
+  dog_id                 Int
+  image_id               Int?
+  embedding              Unsupported("vector")?
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  biometric_identify_log biometric_identify_log[]
+  dog_embedding_images   dog_embedding_images[]
+  dog_profile            dog_profile              @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  dog_images             dog_images?              @relation(fields: [image_id], references: [id], onUpdate: NoAction)
+
+  @@index([embedding])
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dog_front_side_photos {
+  img_id        Int         @id @default(autoincrement())
+  dog_id        Int
+  img_url       String
+  img_view_type String
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
+  dog_profile   dog_profile @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([dog_id, img_url], map: "uq_dog_photos_dog_id_url")
+  @@index([dog_id], map: "idx_dog_photos_dog_id")
+  @@index([dog_id, img_view_type], map: "idx_dog_photos_dog_id_view")
+}
+
+model dog_images {
+  id                   Int                    @id @default(autoincrement())
+  dog_id               Int
+  uploaded_by          Int?
+  image_url            String
+  thumbnail_url        String?
+  is_primary           Boolean?               @default(false)
+  angle                String?
+  capture_date         DateTime?              @db.Date
+  is_processed         Boolean?               @default(false)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  is_default           Boolean?
+  image_type_id        Int?
+  dog_embedding_images dog_embedding_images[]
+  dog_embeddings       dog_embeddings[]
+  dog_profile          dog_profile            @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  image_type           image_type?            @relation(fields: [image_type_id], references: [id], onUpdate: NoAction)
+  users                users?                 @relation(fields: [uploaded_by], references: [id], onUpdate: NoAction)
+}
+
 model dog_profile {
-  id                    Int                     @id @default(autoincrement())
-  owner_id              Int
-  breed_id              Int?
-  name                  String
-  date_of_birth         DateTime?               @db.Date
-  gender                String?
-  microchip_number      String?                 @unique
-  registration_number   String?
-  is_active             Boolean?                @default(true)
-  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime?               @default(now()) @db.Timestamptz(6)
-  is_verified           Boolean                 @default(false)
-  is_deleted            Boolean?                @default(false)
-  description           String?
-  open_to_breed         Boolean?
-  is_neutered_spayed    Boolean?                @map("is_neutered/spayed")
-  attachments           attachments[]
-  dog_embeddings        dog_embeddings[]
-  dog_front_side_photos dog_front_side_photos[]
-  dog_images            dog_images[]
+  id                     Int                      @id @default(autoincrement())
+  owner_id               Int
+  breed_id               Int?
+  name                   String
+  date_of_birth          DateTime?                @db.Date
+  gender                 String?
+  microchip_number       String?                  @unique
+  registration_number    String?
+  is_active              Boolean?                 @default(true)
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  is_verified            Boolean                  @default(false)
+  is_deleted             Boolean?                 @default(false)
+  description            String?
+  open_to_breed          Boolean?
+  is_neutered_spayed     Boolean?                 @map("is_neutered/spayed")
+  attachments            attachments[]
   biometric_identify_log biometric_identify_log[]
-  dog_breed             dog_breed?              @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                 users                   @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  health_profile        health_profile[]
+  dog_embeddings         dog_embeddings[]
+  dog_front_side_photos  dog_front_side_photos[]
+  dog_images             dog_images[]
+  dog_breed              dog_breed?               @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                  users                    @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  health_profile         health_profile[]
   lost_dog_reports       lost_dog_reports[]
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model health_profile {
   id                       Int         @id @default(autoincrement())
   dog_id                   Int
@@ -147,65 +189,32 @@ model health_profile {
   dog_profile              dog_profile @relation(fields: [dog_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model user_role {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
-  users       users[]
+model image_type {
+  id         Int          @id @default(autoincrement())
+  identifier String       @unique
+  name       String
+  created_at DateTime?    @default(now()) @db.Timestamptz(6)
+  dog_images dog_images[]
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model users {
-  id                                              Int                      @id @default(autoincrement())
-  email                                           String                   @unique
-  full_name                                       String?
-  phone                                           String?
-  avatar_url                                      String?
-  created_at                                      DateTime?                @default(now()) @db.Timestamptz(6)
-  updated_at                                      DateTime?                @default(now()) @db.Timestamptz(6)
-  username                                        String                   @unique
-  password_hash                                   String
-  role_id                                         Int?
-  address_line1                                   String?
-  address_line2                                   String?
-  city                                            String?
-  state                                           String?
-  postal_code                                     String?
-  country                                         String?
-  attachments                                     attachments[]
-  biometric_identify_log                          biometric_identify_log[]
-  dog_images                                      dog_images[]
-  dog_profile                                     dog_profile[]
-  health_profile                                  health_profile[]
-  lost_dog_reports                                lost_dog_reports[]
-  match_review_match_review_requested_userTousers match_review[]           @relation("match_review_requested_userTousers")
-  match_review_match_review_review_byTousers      match_review[]           @relation("match_review_review_byTousers")
-  user_role                                       user_role?       @relation(fields: [role_id], references: [id], onUpdate: NoAction)
-}
+model lost_dog_reports {
+  report_id                        Int                                @id @default(autoincrement())
+  owner_id                         Int
+  dog_id                           Int
+  description                      String?
+  last_seen_at                     DateTime?                          @db.Timestamptz(6)
+  last_seen_location               String?
+  last_seen_lat                    Float?                             @db.Real
+  last_seen_lng                    Float?                             @db.Real
+  created_at                       DateTime                           @default(now()) @db.Timestamptz(6)
+  updated_at                       DateTime                           @default(now()) @db.Timestamptz(6)
+  dog_profile                      dog_profile                        @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                            users                              @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
+  lost_report_geo_notification_log lost_report_geo_notification_log[]
 
-model cruelty_report {
-  id                   BigInt                 @id @default(autoincrement())
-  description          String
-  incident_date        DateTime               @db.Timestamptz(6)
-  location_lat         Float
-  location_lng         Float
-  address              String
-  contact_info         String
-  is_anonymous         Boolean                @default(false)
-  has_nose_scan        Boolean                @default(false)
-  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
-  cruelty_report_image cruelty_report_image[]
-}
-
-model cruelty_report_image {
-  id                BigInt         @id @default(autoincrement())
-  cruelty_report_id BigInt
-  image_url         String
-  created_at        DateTime?      @default(now()) @db.Timestamptz(6)
-  cruelty_report    cruelty_report @relation(fields: [cruelty_report_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  @@index([dog_id], map: "idx_lost_reports_dog_id")
+  @@index([last_seen_at], map: "idx_lost_reports_last_seen_at")
+  @@index([owner_id], map: "idx_lost_reports_owner_id")
 }
 
 model match_review {
@@ -224,6 +233,18 @@ model match_review {
   status_match_review_statusTostatus       status?   @relation("match_review_statusTostatus", fields: [status], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
+model notification {
+  id           BigInt    @id @default(autoincrement())
+  user_id      Int
+  title        String    @db.VarChar(255)
+  message      String
+  type         String?   @default("cruelty_alert") @db.VarChar(50)
+  reference_id BigInt?
+  is_read      Boolean?  @default(false)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
 model status {
   id                                       Int            @id @default(autoincrement())
   name                                     String?
@@ -232,56 +253,72 @@ model status {
   match_review_match_review_statusTostatus match_review[] @relation("match_review_statusTostatus")
 }
 
-model biometric_identify_log {
-  id                       Int          @id @default(autoincrement())
-  requested_by             Int?
-  probe_image_url          String
-  quality_gate_accepted    Boolean?
-  quality_gate_feedback    String?
-  quality_gate_confidence  Float?       @db.Real
-  matched                  Boolean?
-  matched_dog_id           Int?
-  matched_embedding_id     Int?
-  similarity               Float?       @db.Real
-  distance                 Float?       @db.Real
-  threshold                Float?       @db.Real
-  status                   String
-  error_message            String?
-  created_at               DateTime?    @default(now()) @db.Timestamptz(6)
-  users                    users?       @relation(fields: [requested_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  dog_profile              dog_profile? @relation(fields: [matched_dog_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  dog_embeddings           dog_embeddings? @relation(fields: [matched_embedding_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+model user_role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  users       users[]
 }
 
-model dog_front_side_photos {
-  img_id        Int         @id @default(autoincrement())
-  dog_id        Int
-  img_url       String
-  img_view_type String
-  created_at    DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at    DateTime    @default(now()) @db.Timestamptz(6)
-  dog_profile   dog_profile @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([dog_id, img_url], map: "uq_dog_photos_dog_id_url")
-  @@index([dog_id], map: "idx_dog_photos_dog_id")
-  @@index([dog_id, img_view_type], map: "idx_dog_photos_dog_id_view")
+model users {
+  id                                              Int                                @id @default(autoincrement())
+  email                                           String                             @unique
+  full_name                                       String?
+  phone                                           String?
+  avatar_url                                      String?
+  created_at                                      DateTime?                          @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime?                          @default(now()) @db.Timestamptz(6)
+  username                                        String                             @unique
+  password_hash                                   String
+  role_id                                         Int?
+  address_line1                                   String?
+  address_line2                                   String?
+  city                                            String?
+  state                                           String?
+  postal_code                                     String?
+  country                                         String?
+  attachments                                     attachments[]
+  biometric_identify_log                          biometric_identify_log[]
+  dog_images                                      dog_images[]
+  dog_profile                                     dog_profile[]
+  health_profile                                  health_profile[]
+  lost_dog_reports                                lost_dog_reports[]
+  lost_report_geo_notification_log                lost_report_geo_notification_log[]
+  match_review_match_review_requested_userTousers match_review[]                     @relation("match_review_requested_userTousers")
+  match_review_match_review_review_byTousers      match_review[]                     @relation("match_review_review_byTousers")
+  notification                                    notification[]
+  user_lost_dog_watch_area                        user_lost_dog_watch_area[]
+  user_role                                       user_role?                         @relation(fields: [role_id], references: [id], onUpdate: NoAction)
 }
 
-model lost_dog_reports {
-  report_id          Int         @id @default(autoincrement())
-  owner_id           Int
-  dog_id             Int
-  description        String?
-  last_seen_at       DateTime?   @db.Timestamptz(6)
-  last_seen_location String?
-  last_seen_lat      Float?      @db.Real
-  last_seen_lng      Float?      @db.Real
-  created_at         DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
-  dog_profile        dog_profile @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users              users       @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
+model lost_report_geo_notification_log {
+  id                Int              @id @default(autoincrement())
+  report_id         Int
+  recipient_user_id Int
+  tier_id           Int
+  radius_m          Int
+  sent_at           DateTime         @default(now()) @db.Timestamptz(6)
+  users             users            @relation(fields: [recipient_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lost_dog_reports  lost_dog_reports @relation(fields: [report_id], references: [report_id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([dog_id], map: "idx_lost_reports_dog_id")
-  @@index([owner_id], map: "idx_lost_reports_owner_id")
-  @@index([last_seen_at], map: "idx_lost_reports_last_seen_at")
+  @@unique([report_id, recipient_user_id, tier_id], map: "uq_lost_report_geo_notification_log_report_recipient_tier")
+  @@index([recipient_user_id], map: "idx_lost_report_geo_notification_log_recipient_user_id")
+  @@index([report_id], map: "idx_lost_report_geo_notification_log_report_id")
+  @@index([report_id, tier_id], map: "idx_lost_report_geo_notification_log_report_tier")
+}
+
+model user_lost_dog_watch_area {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  label          String?
+  lat            Float    @db.Real
+  lng            Float    @db.Real
+  alerts_enabled Boolean  @default(true)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([alerts_enabled], map: "idx_user_lost_dog_watch_area_alerts_enabled")
+  @@index([user_id], map: "idx_user_lost_dog_watch_area_user_id")
 }

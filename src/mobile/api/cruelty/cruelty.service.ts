@@ -108,6 +108,42 @@ export const crueltyService = {
             },
         });
 
+        // Check if any detection has class === 0 and notify vets
+        const hasCrueltyDetection = detections.some((d) =>
+            d.results.some((r: any) => r.class === 0),
+        );
+
+        if (hasCrueltyDetection) {
+            try {
+                // Find all veterinarians (role_id = 3)
+                const vets = await prisma.users.findMany({
+                    where: { role_id: 3 },
+                    select: { id: true },
+                });
+
+                if (vets.length > 0) {
+                    await prisma.notification.createMany({
+                        data: vets.map((vet) => ({
+                            user_id: vet.id,
+                            title: "🚨 Cruelty Alert Detected",
+                            message: `A cruelty case has been detected at ${input.address}. Description: ${input.description.trim()}`,
+                            type: "cruelty_alert",
+                            reference_id: report.id,
+                        })),
+                    });
+
+                    console.log(
+                        `[Notification] Sent cruelty alert to ${vets.length} veterinarian(s)`,
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    `[Notification Error]`,
+                    error instanceof Error ? error.message : "Failed to send notifications",
+                );
+            }
+        }
+
         return {
             message: "Cruelty report submitted successfully 🐾",
             report: {
@@ -115,7 +151,7 @@ export const crueltyService = {
                 description: report.description,
                 isAnonymous: report.is_anonymous,
                 images: report.cruelty_report_image.map((img) => img.image_url),
-                detections: detections, // Include detections in the response
+                detections: detections,
             },
         };
     },
@@ -142,5 +178,61 @@ export const crueltyService = {
             createdAt: report.created_at,
             images: report.cruelty_report_image.map((img) => img.image_url),
         }));
+    },
+
+    getNotifications: async (userId: number) => {
+        const notifications = await prisma.notification.findMany({
+            where: { user_id: userId },
+            orderBy: { created_at: "desc" },
+        });
+
+        // Fetch the full cruelty report for each notification
+        const result = await Promise.all(
+            notifications.map(async (n) => {
+                let crueltyReport = null;
+                if (n.reference_id && n.type === "cruelty_alert") {
+                    const report = await prisma.cruelty_report.findUnique({
+                        where: { id: n.reference_id },
+                        include: { cruelty_report_image: true },
+                    });
+                    if (report) {
+                        crueltyReport = {
+                            id: report.id.toString(),
+                            description: report.description,
+                            incidentDate: report.incident_date,
+                            locationLat: report.location_lat,
+                            locationLng: report.location_lng,
+                            address: report.address,
+                            isAnonymous: report.is_anonymous,
+                            hasNoseScan: report.has_nose_scan,
+                            createdAt: report.created_at,
+                            images: report.cruelty_report_image.map(
+                                (img) => img.image_url,
+                            ),
+                        };
+                    }
+                }
+
+                return {
+                    id: n.id.toString(),
+                    title: n.title,
+                    message: n.message,
+                    type: n.type,
+                    isRead: n.is_read,
+                    createdAt: n.created_at,
+                    crueltyReport,
+                };
+            }),
+        );
+
+        return result;
+    },
+
+    markNotificationAsRead: async (notificationId: bigint) => {
+        await prisma.notification.update({
+            where: { id: notificationId },
+            data: { is_read: true },
+        });
+        return { message: "Notification marked as read" };
     },
 };
