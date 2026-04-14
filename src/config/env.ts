@@ -36,4 +36,6 @@ export const env = {
     : uploadMaxImageSizeMbFromEnv,
   /** Dog recovery / matching FastAPI base URL (match proxy + rebuild-gallery). Set DOG_RECOVERY_FASTAPI_URL. */
   dogRecoveryFastApiUrl: process.env.DOG_RECOVERY_FASTAPI_URL ?? "",
+  /** Secret for POST /api/mobile/geo-notify/process-adaptive (header x-geo-notify-secret). */
+  geoNotifyCronSecret: process.env.GEO_NOTIFY_CRON_SECRET ?? "",
 };

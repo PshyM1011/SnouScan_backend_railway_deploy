@@ -14,3 +14,12 @@ crueltyRouter.post(
 
 // Endpoint: GET /mobile/api/cruelty/reports
 crueltyRouter.get("/reports", crueltyController.getReports);
+
+// Endpoint: GET /mobile/api/cruelty/notifications/:userId
+crueltyRouter.get("/notifications/:userId", crueltyController.getNotifications);
+
+// Endpoint: PATCH /mobile/api/cruelty/notifications/:notificationId/read
+crueltyRouter.patch(
+    "/notifications/:notificationId/read",
+    crueltyController.markNotificationAsRead,
+);
