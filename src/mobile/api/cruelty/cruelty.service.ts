@@ -190,6 +190,9 @@ export const crueltyService = {
         const result = await Promise.all(
             notifications.map(async (n) => {
                 let crueltyReport = null;
+                let lostReport = null;
+                const referenceId =
+                    n.reference_id != null ? Number(n.reference_id) : null;
                 if (n.reference_id && n.type === "cruelty_alert") {
                     const report = await prisma.cruelty_report.findUnique({
                         where: { id: n.reference_id },
@@ -212,15 +215,47 @@ export const crueltyService = {
                         };
                     }
                 }
+                if (
+                    n.type === "lost_dog_nearby" &&
+                    referenceId !== null &&
+                    Number.isInteger(referenceId)
+                ) {
+                    const report = await prisma.lost_dog_reports.findUnique({
+                        where: { report_id: referenceId },
+                        include: {
+                            dog_profile: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                        },
+                    });
+                    if (report) {
+                        lostReport = {
+                            reportId: report.report_id,
+                            dogId: report.dog_id,
+                            dogName: report.dog_profile?.name ?? null,
+                            description: report.description,
+                            lastSeenAt: report.last_seen_at,
+                            lastSeenLocation: report.last_seen_location,
+                            lastSeenLat: report.last_seen_lat,
+                            lastSeenLng: report.last_seen_lng,
+                            createdAt: report.created_at,
+                        };
+                    }
+                }
 
                 return {
                     id: n.id.toString(),
                     title: n.title,
                     message: n.message,
                     type: n.type,
+                    referenceId,
                     isRead: n.is_read,
                     createdAt: n.created_at,
                     crueltyReport,
+                    lostReport,
                 };
             }),
         );

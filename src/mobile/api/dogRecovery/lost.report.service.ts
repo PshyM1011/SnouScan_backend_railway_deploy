@@ -183,8 +183,17 @@ export const lostReportService = {
     if (!existing) {
       throw new Error("Report not found or access denied");
     }
-    await prisma.lost_dog_reports.delete({
-      where: { report_id: reportId },
+    const referenceId = BigInt(reportId);
+    await prisma.$transaction(async (tx) => {
+      await tx.notification.deleteMany({
+        where: {
+          type: "lost_dog_nearby",
+          reference_id: referenceId,
+        },
+      });
+      await tx.lost_dog_reports.delete({
+        where: { report_id: reportId },
+      });
     });
     triggerGalleryRebuild().catch(() => {});
     return { deleted: true };
