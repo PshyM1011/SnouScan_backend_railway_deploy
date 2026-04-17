@@ -10,7 +10,7 @@ const NOTIFICATION_TYPE = "lost_dog_nearby";
 export type ProcessAdaptiveGeoNotifyResult = {
   /** Lost reports considered (had lat/lng). */
   reportsConsidered: number;
-  /** New notification rows created. */
+  /** Notification rows created/updated for user feed. */
   notificationsCreated: number;
   /** New log rows (same count as notifications when all succeed). */
   logRowsCreated: number;
@@ -51,6 +51,9 @@ export async function processAdaptiveLostDogGeoNotifications(): Promise<ProcessA
     }
 
     const dogName = report.dog_profile?.name?.trim() || "A dog";
+    const locationLabel = report.last_seen_location?.trim() || "an unknown location";
+    const seenAt = report.last_seen_at ?? report.created_at;
+    const seenAtLabel = seenAt.toISOString();
     const candidates = new Set<number>();
 
     for (const w of watchAreas) {
@@ -78,6 +81,7 @@ export async function processAdaptiveLostDogGeoNotifications(): Promise<ProcessA
       }
 
       try {
+        const referenceId = BigInt(report.report_id);
         await prisma.$transaction(async (tx) => {
           await tx.lost_report_geo_notification_log.create({
             data: {
@@ -87,15 +91,46 @@ export async function processAdaptiveLostDogGeoNotifications(): Promise<ProcessA
               radius_m: tier.radiusM,
             },
           });
-          await tx.notification.create({
-            data: {
+          const existingNotifications = await tx.notification.findMany({
+            where: {
               user_id: userId,
-              title: "Lost dog near your watch area",
-              message: `${dogName} was reported missing near a location you follow. Report #${report.report_id}.`,
               type: NOTIFICATION_TYPE,
-              reference_id: BigInt(report.report_id),
+              reference_id: referenceId,
             },
+            select: { id: true },
+            orderBy: { created_at: "desc" },
           });
+
+          const payload = {
+            title: `Report #${report.report_id} Update`,
+            message: `${dogName} was reported missing near ${locationLabel}. Last seen at ${seenAtLabel}.`,
+            is_read: false,
+            created_at: new Date(),
+          };
+
+          if (existingNotifications.length > 0) {
+            const [latest, ...duplicates] = existingNotifications;
+            await tx.notification.update({
+              where: { id: latest.id },
+              data: payload,
+            });
+            if (duplicates.length > 0) {
+              await tx.notification.deleteMany({
+                where: {
+                  id: { in: duplicates.map((n) => n.id) },
+                },
+              });
+            }
+          } else {
+            await tx.notification.create({
+              data: {
+                user_id: userId,
+                type: NOTIFICATION_TYPE,
+                reference_id: referenceId,
+                ...payload,
+              },
+            });
+          }
         });
         logRowsCreated += 1;
         notificationsCreated += 1;
