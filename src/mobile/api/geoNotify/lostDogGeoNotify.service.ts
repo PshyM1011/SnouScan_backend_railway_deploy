@@ -7,6 +7,17 @@ import {
 
 const NOTIFICATION_TYPE = "lost_dog_nearby";
 
+function formatUserReadableDateTime(value: Date): string {
+  return value.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 export type ProcessAdaptiveGeoNotifyResult = {
   /** Lost reports considered (had lat/lng). */
   reportsConsidered: number;
@@ -53,7 +64,7 @@ export async function processAdaptiveLostDogGeoNotifications(): Promise<ProcessA
     const dogName = report.dog_profile?.name?.trim() || "A dog";
     const locationLabel = report.last_seen_location?.trim() || "an unknown location";
     const seenAt = report.last_seen_at ?? report.created_at;
-    const seenAtLabel = seenAt.toISOString();
+    const seenAtLabel = formatUserReadableDateTime(seenAt);
     const candidates = new Set<number>();
 
     for (const w of watchAreas) {
@@ -103,7 +114,7 @@ export async function processAdaptiveLostDogGeoNotifications(): Promise<ProcessA
 
           const payload = {
             title: `Report #${report.report_id} Update`,
-            message: `${dogName} was reported missing near ${locationLabel}. Last seen at ${seenAtLabel}.`,
+            message: `${dogName} was reported missing near ${locationLabel}. Last seen: ${seenAtLabel}. Report #${report.report_id}.`,
             is_read: false,
             created_at: new Date(),
           };
