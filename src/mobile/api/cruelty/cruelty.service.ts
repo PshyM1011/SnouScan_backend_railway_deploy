@@ -246,12 +246,22 @@ export const crueltyService = {
                     }
                 }
 
+                const reportId =
+                    n.type === "lost_dog_nearby"
+                        ? (lostReport?.reportId ?? referenceId)
+                        : null;
+
                 return {
                     id: n.id.toString(),
-                    title: n.title,
+                    title:
+                        n.type === "lost_dog_nearby" && reportId !== null
+                            ? `Report #${reportId} Update`
+                            : n.title,
                     message: n.message,
                     type: n.type,
                     referenceId,
+                    reference_id: referenceId,
+                    reportId,
                     isRead: n.is_read,
                     createdAt: n.created_at,
                     crueltyReport,
