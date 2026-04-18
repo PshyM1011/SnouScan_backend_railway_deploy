@@ -152,6 +152,14 @@ export const sightingReportService = {
       where: { sighting_id: { in: ids } },
       orderBy: { created_at: "desc" },
       include: {
+        users: {
+          select: {
+            id: true,
+            full_name: true,
+            email: true,
+            phone: true,
+          },
+        },
         dog_sighting_report_matches: {
           orderBy: { rank: "asc" },
           include: {
