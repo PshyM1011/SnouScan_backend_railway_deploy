@@ -157,7 +157,8 @@ model dog_profile {
   dog_breed              dog_breed?               @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                  users                    @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   health_profile         health_profile[]
-  lost_dog_reports       lost_dog_reports[]
+  lost_dog_reports              lost_dog_reports[]
+  dog_sighting_report_matches   dog_sighting_report_matches[]
 }
 
 model health_profile {
@@ -211,6 +212,7 @@ model lost_dog_reports {
   dog_profile                      dog_profile                        @relation(fields: [dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   users                            users                              @relation(fields: [owner_id], references: [id], onUpdate: NoAction)
   lost_report_geo_notification_log lost_report_geo_notification_log[]
+  dog_sighting_report_matches      dog_sighting_report_matches[]
 
   @@index([dog_id], map: "idx_lost_reports_dog_id")
   @@index([last_seen_at], map: "idx_lost_reports_last_seen_at")
@@ -284,6 +286,7 @@ model users {
   dog_profile                                     dog_profile[]
   health_profile                                  health_profile[]
   lost_dog_reports                                lost_dog_reports[]
+  dog_sighting_reports                            dog_sighting_reports[]
   lost_report_geo_notification_log                lost_report_geo_notification_log[]
   match_review_match_review_requested_userTousers match_review[]                     @relation("match_review_requested_userTousers")
   match_review_match_review_review_byTousers      match_review[]                     @relation("match_review_review_byTousers")
@@ -321,4 +324,42 @@ model user_lost_dog_watch_area {
 
   @@index([alerts_enabled], map: "idx_user_lost_dog_watch_area_alerts_enabled")
   @@index([user_id], map: "idx_user_lost_dog_watch_area_user_id")
+}
+
+model dog_sighting_reports {
+  sighting_id               Int       @id @default(autoincrement())
+  reporter_user_id          Int
+  frontal_image_url         String
+  lateral_image_url         String
+  description               String?   @db.VarChar(2000)
+  sighting_at               DateTime  @db.Timestamptz(6)
+  sighting_lat              Float?    @db.Real
+  sighting_lng              Float?    @db.Real
+  sighting_location_label   String?
+  created_at                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                DateTime  @default(now()) @db.Timestamptz(6)
+  users                     users     @relation(fields: [reporter_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  dog_sighting_report_matches dog_sighting_report_matches[]
+
+  @@index([reporter_user_id], map: "idx_dog_sighting_reports_reporter_user_id")
+  @@index([sighting_at], map: "idx_dog_sighting_reports_sighting_at")
+}
+
+model dog_sighting_report_matches {
+  id                   Int                 @id @default(autoincrement())
+  sighting_id          Int
+  rank                 Int
+  matched_dog_id       Int
+  lost_report_id       Int?
+  similarity           Float?              @db.Real
+  percentage           Float?              @db.Real
+  confidence           Float?              @db.Real
+  dog_sighting_reports dog_sighting_reports @relation(fields: [sighting_id], references: [sighting_id], onDelete: Cascade, onUpdate: NoAction)
+  dog_profile          dog_profile         @relation(fields: [matched_dog_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lost_dog_reports     lost_dog_reports?   @relation(fields: [lost_report_id], references: [report_id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@unique([sighting_id, rank], map: "uq_dog_sighting_report_matches_sighting_rank")
+  @@index([sighting_id], map: "idx_dog_sighting_report_matches_sighting_id")
+  @@index([matched_dog_id], map: "idx_dog_sighting_report_matches_matched_dog_id")
+  @@index([lost_report_id], map: "idx_dog_sighting_report_matches_lost_report_id")
 }
