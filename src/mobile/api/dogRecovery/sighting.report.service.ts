@@ -3,6 +3,9 @@ import { prisma } from "../../../lib/prisma";
 import { uploadService } from "../uploads/upload.service";
 import { proxyMatchToFastApi } from "./found.dog.match.service";
 
+/** In-app notification type for rank-1 lost-report owner when a sighting is submitted. */
+const DOG_SIGHTING_MATCH_NOTIFICATION_TYPE = "dog_sighting_match";
+
 export type CreateSightingReportInput = {
   description?: string | null;
   sighting_at: string | Date;
@@ -99,6 +102,34 @@ export const sightingReportService = {
             similarity: m.similarity,
             percentage: m.percentage,
             confidence: m.confidence,
+          },
+        });
+      }
+
+      const rankOne = await tx.dog_sighting_report_matches.findFirst({
+        where: { sighting_id: sighting.sighting_id, rank: 1 },
+        include: {
+          lost_dog_reports: { select: { owner_id: true } },
+          dog_profile: { select: { name: true } },
+        },
+      });
+      if (
+        rankOne?.lost_report_id &&
+        rankOne.lost_dog_reports &&
+        rankOne.lost_dog_reports.owner_id !== reporterUserId
+      ) {
+        const dogName = rankOne.dog_profile?.name?.trim() || "Your dog";
+        const pct =
+          rankOne.percentage != null
+            ? `${Math.round(Number(rankOne.percentage))}%`
+            : "a possible";
+        await tx.notification.create({
+          data: {
+            user_id: rankOne.lost_dog_reports.owner_id,
+            title: "Possible sighting of your lost dog",
+            message: `${dogName} may have been sighted (${pct} match). Open the app to review photos and details. Sighting #${sighting.sighting_id}.`,
+            type: DOG_SIGHTING_MATCH_NOTIFICATION_TYPE,
+            reference_id: BigInt(sighting.sighting_id),
           },
         });
       }
