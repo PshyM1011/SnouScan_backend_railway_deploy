@@ -11,6 +11,7 @@ import { foundDogMatchRouter } from "./dogRecovery/found.dog.match.route";
 import { lostReportRouter } from "./dogRecovery/lost.report.route";
 import { sightingReportRouter } from "./dogRecovery/sighting.report.route";
 import { geoNotifyRouter } from "./geoNotify/geoNotify.route";
+import { chatRouter } from "./chat/chat.route";
 
 import { uploadRouter } from "./uploads/upload.route";
 
@@ -30,5 +31,6 @@ mobileApiRouter.use("/dog-recovery/sightings", sightingReportRouter);
 // Shorter path for lost reports (e.g. POST /api/mobile/lost-report)
 mobileApiRouter.use("/lost-report", lostReportRouter);
 mobileApiRouter.use("/geo-notify", geoNotifyRouter);
+mobileApiRouter.use("/chat", chatRouter);
 
 mobileApiRouter.use("/uploads", uploadRouter);
