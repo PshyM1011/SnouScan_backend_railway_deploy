@@ -38,4 +38,10 @@ export const env = {
   dogRecoveryFastApiUrl: process.env.DOG_RECOVERY_FASTAPI_URL ?? "",
   /** Secret for POST /api/mobile/geo-notify/process-adaptive (header x-geo-notify-secret). */
   geoNotifyCronSecret: process.env.GEO_NOTIFY_CRON_SECRET ?? "",
+  /**
+   * Firebase service account JSON (stringified) for in-app messaging auth/chat.
+   * Keep separate from storage credentials to avoid disrupting existing flows.
+   */
+  firebaseServiceAccountInAppMessagingKey:
+    process.env.FIREBASE_SERVICE_ACCOUNT_IN_APP_MESSAGING_KEY ?? "",
 };
