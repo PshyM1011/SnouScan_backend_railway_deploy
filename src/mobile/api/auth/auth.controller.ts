@@ -34,4 +34,21 @@ export const authController = {
       });
     }
   },
+
+  firebaseToken: async (req: Request, res: Response) => {
+    try {
+      if (!req.authUserId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const token = await authService.createFirebaseCustomToken(req.authUserId);
+      return res.status(200).json({ token });
+    } catch (error) {
+      return res.status(400).json({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to create firebase custom token",
+      });
+    }
+  },
 };

@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import { prisma } from "../../../lib/prisma";
 import { env } from "../../../config/env";
 import { signAuthToken } from "../../../utils/jwt";
+import { getInAppMessagingAuth } from "../../../lib/firebaseAdminInAppMessaging";
 
 type RegisterInput = {
   username: string;
@@ -209,5 +210,28 @@ export const authService = {
     }
 
     return toAuthResponse(user);
+  },
+
+  createFirebaseCustomToken: async (userId: number) => {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role_id: true,
+      },
+    });
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const uid = String(user.id);
+    const auth = getInAppMessagingAuth();
+    return auth.createCustomToken(uid, {
+      appUserId: user.id,
+      username: user.username,
+      email: user.email,
+      roleId: user.role_id ?? undefined,
+    });
   },
 };
