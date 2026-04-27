@@ -45,7 +45,7 @@ export async function openSightingConversation(params: {
   }
 
   const participants = [String(reporterUserId), String(ownerUserId)].sort();
-  const conversationId = `sighting_${sightingId}_${participants[0]}_${participants[1]}`;
+  const conversationId = `sighting_${sightingId}`;
 
   const db = getInAppMessagingFirestore();
   const ref = db.collection("conversations").doc(conversationId);
