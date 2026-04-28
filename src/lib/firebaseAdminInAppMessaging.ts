@@ -63,3 +63,11 @@ export function getInAppMessagingAuth() {
 export function getInAppMessagingFirestore() {
   return getFirestore(getOrCreateInAppMessagingApp());
 }
+
+export function getInAppMessagingFirebaseDebugInfo() {
+  const app = getOrCreateInAppMessagingApp();
+  return {
+    appName: app.name,
+    projectId: app.options.projectId ?? "",
+  };
+}
