@@ -2,6 +2,8 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getStorage } from "firebase-admin/storage";
 import { env } from "../config/env";
 
+const APP_NAME = "storage";
+
 const validateFirebaseEnv = () => {
   if (!env.firebaseProjectId) {
     throw new Error("Missing FIREBASE_PROJECT_ID");
@@ -21,20 +23,24 @@ const validateFirebaseEnv = () => {
 };
 
 const getFirebaseApp = () => {
-  if (getApps().length > 0) {
-    return getApps()[0];
+  const existing = getApps().find((app) => app.name === APP_NAME);
+  if (existing) {
+    return existing;
   }
 
   validateFirebaseEnv();
 
-  return initializeApp({
-    credential: cert({
-      projectId: env.firebaseProjectId,
-      clientEmail: env.firebaseClientEmail,
-      privateKey: env.firebasePrivateKey.replace(/\\n/g, "\n"),
-    }),
-    storageBucket: env.firebaseStorageBucket,
-  });
+  return initializeApp(
+    {
+      credential: cert({
+        projectId: env.firebaseProjectId,
+        clientEmail: env.firebaseClientEmail,
+        privateKey: env.firebasePrivateKey.replace(/\\n/g, "\n"),
+      }),
+      storageBucket: env.firebaseStorageBucket,
+    },
+    APP_NAME,
+  );
 };
 
 export const getFirebaseStorageBucket = () => {
@@ -64,4 +70,14 @@ export const uploadFile = async (
 
   // Return the public URL
   return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+};
+
+export const getStorageFirebaseDebugInfo = () => {
+  const app = getFirebaseApp();
+  return {
+    appName: app.name,
+    projectId: app.options.projectId ?? env.firebaseProjectId ?? "",
+    bucket: env.firebaseStorageBucket ?? "",
+    clientEmail: env.firebaseClientEmail ?? "",
+  };
 };
