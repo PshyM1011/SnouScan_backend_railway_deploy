@@ -18,6 +18,16 @@ export type MatchResult = {
   message?: string;
 };
 
+function extractFastApiErrorMessage(data: unknown, statusText: string): string {
+  if (data && typeof (data as any).detail === "string") {
+    return (data as any).detail;
+  }
+  if (data && typeof (data as any).message === "string") {
+    return (data as any).message;
+  }
+  return statusText;
+}
+
 /**
  * Forward frontal + lateral image buffers to FastAPI POST /match and return the result.
  * Used by Express so Flutter only talks to Express (no CORS with FastAPI).
@@ -53,11 +63,45 @@ export async function proxyMatchToFastApi(
 
   const data = response.data as MatchResult;
   if (response.status !== 200) {
-    const errMsg =
-      (data && typeof (data as any).detail === "string" && (data as any).detail) ||
-      (data && (data as any).message) ||
-      response.statusText;
+    const errMsg = extractFastApiErrorMessage(data, response.statusText);
     throw new Error(errMsg || `FastAPI returned ${response.status}`);
   }
+  return data;
+}
+
+/** Forward image URLs to FastAPI POST /match-by-url and return the result. */
+export async function proxyMatchByUrlToFastApi(
+  frontalUrl: string,
+  lateralUrl: string,
+  options: { topK?: number } = {},
+): Promise<MatchResult> {
+  const { topK = 5 } = options;
+
+  if (!FASTAPI_BASE) {
+    throw new Error(
+      "DOG_RECOVERY_FASTAPI_URL is not set. Set it to your FastAPI base URL for match.",
+    );
+  }
+
+  const response = await axios.post<MatchResult>(
+    `${FASTAPI_BASE.replace(/\/$/, "")}/match-by-url`,
+    {
+      frontal_url: frontalUrl,
+      lateral_url: lateralUrl,
+      top_k: topK,
+    },
+    {
+      headers: { "Content-Type": "application/json" },
+      timeout: MATCH_TIMEOUT_MS,
+      validateStatus: () => true,
+    },
+  );
+
+  const data = response.data as MatchResult;
+  if (response.status !== 200) {
+    const errMsg = extractFastApiErrorMessage(data, response.statusText);
+    throw new Error(errMsg || `FastAPI returned ${response.status}`);
+  }
+
   return data;
 }

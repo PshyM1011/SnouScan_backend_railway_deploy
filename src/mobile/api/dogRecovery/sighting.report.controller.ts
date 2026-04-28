@@ -13,13 +13,14 @@ export const sightingReportController = {
       if (!req.authUserId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      const files = req.files as
-        | { frontal?: Express.Multer.File[]; lateral?: Express.Multer.File[] }
-        | undefined;
-      const frontal = files?.frontal?.[0];
-      const lateral = files?.lateral?.[0];
-      if (!frontal?.buffer || !lateral?.buffer) {
-        return res.status(400).json({ message: "frontal and lateral image files are required" });
+
+      const frontalUrl = String(req.body?.frontal_url ?? "").trim();
+      const lateralUrl = String(req.body?.lateral_url ?? "").trim();
+      const sightingAt = req.body?.sighting_at ?? req.body?.sightingAt;
+      if (!frontalUrl || !lateralUrl || !sightingAt) {
+        return res
+          .status(400)
+          .json({ message: "frontal_url, lateral_url and sighting_at are required" });
       }
 
       const topKRaw = req.body?.top_k ?? req.body?.topK;
@@ -29,8 +30,10 @@ export const sightingReportController = {
       const result = await sightingReportService.create(
         req.authUserId,
         {
+          frontal_url: frontalUrl,
+          lateral_url: lateralUrl,
           description: req.body?.description,
-          sighting_at: req.body?.sighting_at ?? req.body?.sightingAt,
+          sighting_at: sightingAt,
           sighting_lat:
             req.body?.sighting_lat != null ? Number(req.body.sighting_lat) : undefined,
           sighting_lng:
@@ -38,8 +41,6 @@ export const sightingReportController = {
           sighting_location_label:
             req.body?.sighting_location_label ?? req.body?.sightingLocationLabel,
         },
-        frontal,
-        lateral,
         k,
       );
       return res.status(201).json(result);

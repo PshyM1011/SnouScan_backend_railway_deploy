@@ -1,12 +1,13 @@
 import type { Prisma } from "../../../generated/prisma/client";
 import { prisma } from "../../../lib/prisma";
-import { uploadService } from "../uploads/upload.service";
-import { proxyMatchToFastApi } from "./found.dog.match.service";
+import { proxyMatchByUrlToFastApi } from "./found.dog.match.service";
 
 /** In-app notification type for rank-1 lost-report owner when a sighting is submitted. */
 const DOG_SIGHTING_MATCH_NOTIFICATION_TYPE = "dog_sighting_match";
 
 export type CreateSightingReportInput = {
+  frontal_url: string;
+  lateral_url: string;
   description?: string | null;
   sighting_at: string | Date;
   sighting_lat?: number | null;
@@ -41,13 +42,11 @@ const dogSelectForMatchCard = {
 
 export const sightingReportService = {
   /**
-   * Upload images, run FastAPI match, persist sighting + top 3 match rows.
+   * Run FastAPI URL-based match, persist sighting + top K match rows.
    */
   create: async (
     reporterUserId: number,
     input: CreateSightingReportInput,
-    frontal: Express.Multer.File,
-    lateral: Express.Multer.File,
     topK = 3,
   ) => {
     const sightingAt = new Date(input.sighting_at as string);
@@ -55,20 +54,7 @@ export const sightingReportService = {
       throw new Error("Invalid sighting_at");
     }
 
-    const frontalUpload = await uploadService.uploadFile(frontal, {
-      folder: "dog-sighting-reports",
-      uploadedByUserId: reporterUserId,
-    });
-    const lateralUpload = await uploadService.uploadFile(lateral, {
-      folder: "dog-sighting-reports",
-      uploadedByUserId: reporterUserId,
-    });
-
-    const match = await proxyMatchToFastApi(frontal.buffer, lateral.buffer, {
-      frontalFilename: frontal.originalname || "frontal.jpg",
-      lateralFilename: lateral.originalname || "lateral.jpg",
-      topK,
-    });
+    const match = await proxyMatchByUrlToFastApi(input.frontal_url, input.lateral_url, { topK });
 
     const top = (match.matches ?? []).slice(0, topK);
 
@@ -76,8 +62,8 @@ export const sightingReportService = {
       const sighting = await tx.dog_sighting_reports.create({
         data: {
           reporter_user_id: reporterUserId,
-          frontal_image_url: frontalUpload.url,
-          lateral_image_url: lateralUpload.url,
+          frontal_image_url: input.frontal_url,
+          lateral_image_url: input.lateral_url,
           description: input.description?.trim() || undefined,
           sighting_at: sightingAt,
           sighting_lat: input.sighting_lat ?? undefined,
